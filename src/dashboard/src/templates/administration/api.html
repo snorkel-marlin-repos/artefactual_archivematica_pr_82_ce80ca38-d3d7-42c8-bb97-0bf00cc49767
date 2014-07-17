@@ -1,0 +1,41 @@
+{% extends "layout_fluid.html" %}
+{% load breadcrumb %}
+
+{% block title %}Administration{% endblock %}
+{% block h1 %}Administration{% endblock %}
+{% block page_id %}Administration{% endblock %}
+
+{% block js %}
+{% endblock %}
+
+{% block extra_css %}
+{% endblock %}
+
+{% block content %}
+
+  <div class="row">
+
+    {% include "administration/sidebar.html" %}
+
+    <div class="span12">
+
+      <h3>REST API configuration</h3>
+
+      <h4>IP whitelist</h4>
+
+      <p>Enter a whitespace-separated list of IPs or hostnames permitted to use the API.</p>
+
+      <div style='width: 500px; height: 300px;'>
+      <form method='POST'>
+        <textarea name='whitelist' style='width: 500px; height: 300px;'>{{ whitelist }}</textarea>
+        <div style='float:right;'>
+          <input type='submit' value='Save' class='btn' />
+        </div>
+      </form>
+      </div>
+
+    </div>
+
+  </div>
+
+{% endblock %}

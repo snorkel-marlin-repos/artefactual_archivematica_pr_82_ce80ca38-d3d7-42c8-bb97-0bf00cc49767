@@ -1,0 +1,154 @@
+{% extends "layout_fluid.html" %}
+{% load breadcrumb %}
+{% load url from future %}
+
+{% block title %}Archival storage{% endblock %}
+{% block h1 %}Archival storage{% endblock %}
+{% block page_id %}archival-storage{% endblock %}
+
+{% block js %}
+  <script type="text/javascript" src="{{ STATIC_URL }}js/advanced-search-query-creator.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}js/archival_storage/archival_storage_search.js"></script>
+{% endblock %}
+
+{% block extra_css %}
+  <link href="{{ STATIC_URL }}css/search.css" rel="stylesheet" type="text/css" />
+  <link href="{{ STATIC_URL }}css/archival_storage.css" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block content %}
+
+  <ul class="breadcrumb">
+    {% breadcrumb_url 'Archival storage' 'components.archival_storage.views.overview' %}
+    {% breadcrumb 'Search' %}
+  </ul>
+
+  {% include "archival_storage/_archival_storage_search_form.html" %}
+
+  {% if results %}
+    {% if not file_mode %}
+    <div>
+      <form action="{% url 'create_aic' %}" method="post">
+        {{ aic_creation_form }}
+        <input type='submit' id='create_aic' value='Create an AIC'>
+      </form>
+    </div>
+    {% endif %}
+
+    {% include "archival_storage/_archival_storage_search_summary.html" %}
+
+    {% if not file_mode %}
+
+      <table>
+      <thead>
+        <th>
+          AIP
+        </th>
+        <th>
+          Size
+        </th>
+        <th>
+          UUID
+        </th>
+        {% if show_aics %}
+        <th>
+          AIC #
+        </th>
+        {% endif %}
+        <th>
+          Files
+        </th>
+        <th>
+          Date stored
+        </th>
+        <th>
+          Status
+        </th>
+        <th>Pointer File</th>
+        <th></th>
+      </thead>
+      <tbody>
+      {% for term_usage in results %}
+        <tr>
+          <td>
+            <a href="{% url 'components.archival_storage.views.aip_download' term_usage.term %}">{{ term_usage.name }}</a>
+            <a href='/archival-storage/search/json/aip/{{ term_usage.document_id_no_hyphens }}/' target='_blank'>(view raw)</a>
+          </td>
+          <td>
+            {% if term_usage.size != None %}
+              {{ term_usage.size }}
+            {% endif %}
+          </td>
+          <td class="uuid">{{ term_usage.term }}</td>
+          {% if show_aics %}
+          <td>
+            {% if term_usage.type == 'AIC' %}
+              {{ term_usage.AICID }} ({{ term_usage.aips_in_aic }} AIP{{ term_usage.aips_in_aic|pluralize }} in AIC)
+            {% elif term_usage.isPartOf %}
+              Part of {{ term_usage.isPartOf }}
+            {% else %}
+              None
+            {% endif %}
+          </td>
+          {% endif %}
+          <td>{{ term_usage.count }} file{{term_usage.count|pluralize}}</td>
+          <td><span class='timestamp'>{{ term_usage.date }}</a></td>
+          <td>{{ term_usage.status }}</td>
+          <td><a href="{% url 'components.archival_storage.views.aip_pointer_file_download' term_usage.term %}">Pointer File</a></td>
+          <td>
+            <a href="{% url 'components.archival_storage.views.aip_delete' term_usage.term %}"><img src="{{ STATIC_URL }}images/delete.png"/></a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+      </table>
+
+    {% else %}
+
+      <div class='aip-search-item'>
+        <div class='aip-search-item-file-column-header'>File(s)</div>
+        <div class='aip-search-item-aip-column-header'>AIP(s)</div>
+      </div>
+      <br clear='all' />
+
+      {% for item in results %}
+        <div class='aip-search-item'>
+        {% if item.sipname %}
+          <div class='aip-search-item-thumbnail-column'>
+            <a href="{% url 'components.archival_storage.views.aip_file_download' item.fileuuid %}">
+              <img src="/archival-storage/thumbnail/{{ item.fileuuid }}"/>
+            </a>
+          </div>
+
+          <div class='aip-search-item-file-column'>
+            <div><a class='uuid' href="{% url 'components.archival_storage.views.aip_file_download' item.fileuuid %}">{{ item.filename }}</a></div>
+            <div><a class='uuid' href="{% url 'components.archival_storage.views.aip_file_download' item.fileuuid %}">{{ item.fileuuid }}</a></div>
+          </div>
+
+          <div class='aip-search-item-aip-column'>
+            <div><a class='uuid' href="{% url 'components.archival_storage.views.aip_download' item.AIPUUID %}">{{ item.sipname }} {{item.AIPUUID}}</a></div>
+            <div><a href='/archival-storage/search/json/file/{{ item.document_id_no_hyphens }}/' target='_blank'>(view raw)</a></div>
+          </div>
+        {% else %}
+          (AIP {{item.AIPUUID}} details missing from database.)
+        {% endif %}
+        </div>
+        <br clear='all' />
+      {% endfor %}
+    {% endif %}
+
+    <div style='clear: both'>
+      {% include "archival_storage/_archival_storage_search_summary.html" %}
+    </div>
+
+  {% else %}
+    <div class='search-summary'>No results, please try another search.</div>
+  {% endif %}
+
+  <script>
+  $(document).ready(function() {
+    localizeTimestampElements();
+  });
+  </script>
+
+{% endblock %}

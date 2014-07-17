@@ -1,0 +1,39 @@
+.aip-search-item {
+  margin-bottom: 50px;
+  margin-left: 2em;
+}
+
+.aip-search-item-file-column-header {
+  float: left;
+  margin-left:145px;
+  width:330px;
+  text-align: center;
+}
+
+.aip-search-item-aip-column-header {
+  float: left;
+  width: 380px;
+  text-align: center;
+  margin-left: 20px;
+}
+
+.aip-search-item-thumbnail-column {
+  float: left;
+  margin-bottom: 40px;
+  width: 150px;
+}
+
+.aip-search-item-file-column {
+  float: left;
+  width: 330px;
+}
+
+.aip-search-item-aip-column {
+  float: left;
+  width: 380px;
+  margin-left: 20px;
+}
+
+div.search-summary p {
+  font-weight: bold;
+}

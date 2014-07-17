@@ -1,0 +1,19 @@
+#!/bin/sh
+# source debconf stuff
+. /usr/share/debconf/confmodule
+. /usr/share/dbconfig-common/dpkg/postinst
+
+dbc_go archivematica-mcp-server $@
+
+if [ -d /var/archivematica/sharedDirectory ]; then
+  echo "/var/archivematica/sharedDirectory exists"
+else
+  echo "/var/archivematica/sharedDirectory doesn't exist... creating..."
+  mkdir -p /var/archivematica/sharedDirectory/
+  rsync -a /usr/share/archivematica/sharedDirectoryStructure/* /var/archivematica/sharedDirectory/.
+fi
+
+chown -R archivematica:archivematica /var/archivematica/
+
+/usr/share/archivematica/postinstSharedWithDev
+

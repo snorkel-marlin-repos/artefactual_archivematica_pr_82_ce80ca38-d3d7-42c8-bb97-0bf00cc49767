@@ -1,0 +1,109 @@
+{% extends "layout_fluid.html" %}
+{% load breadcrumb %}
+{% load url from future %}
+
+{% block title %}Archival storage{% endblock %}
+{% block h1 %}Archival storage{% endblock %}
+{% block page_id %}archival-storage{% endblock %}
+
+{% block js %}
+  <script type="text/javascript" src="{{ STATIC_URL }}js/advanced-search-query-creator.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}js/archival_storage/archival_storage_search.js"></script>
+{% endblock %}
+
+{% block extra_css %}
+  <link href="{{ STATIC_URL }}css/search.css" rel="stylesheet" type="text/css" />
+  <link href="{{ STATIC_URL }}css/archival_storage.css" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block content %}
+
+  {% include "archival_storage/_archival_storage_search_form.html" %}
+
+  {% if aips %}
+    <h1>
+      Browse archival storage<br/>
+      <small>
+        Total size: {{ total_size }} MB
+      {% if aip_indexed_file_count %}
+        &nbsp;&nbsp;Total files: {{ aip_indexed_file_count }} indexed
+      {% endif %}
+      </small>
+    </h1>
+
+    <table>
+      <thead>
+        <th>
+          <div>
+            AIP
+            <a class="up {% if order_by == 'name_unanalyzed' and sort_by == 'up' %} selected_up{% endif %}" href="?order_by=name_unanalyzed&sort_by=up">Sort</a>
+            <a class="down {% if order_by == 'name_unanalyzed' and sort_by == 'down' %} selected_down{% endif %}" href="?order_by=name_unanalyzed&sort_by=down">Sort</a>
+          </div>
+        </th>
+        <th>
+          <div>
+            Size
+            <a class="up {% if order_by == 'size' and sort_by == 'up' %} selected_up"{% endif %}" href="?order_by=size&sort_by=up">Sort</a>
+            <a class="down {% if order_by == 'size' and sort_by == 'down' %} selected_down"{% endif %}" href="?order_by=size&sort_by=down">Sort</a>
+          </div>
+        </th>
+        <th>
+          <div>
+            UUID
+          </div>
+        </th>
+        <th>
+          <div>
+            Date stored
+            <a class="up {% if order_by == 'created' and sort_by == 'up' %} selected_up{% endif %}" href="?order_by=created&sort_by=up">Sort</a>
+            <a class="down {% if order_by == 'created' and sort_by == 'down' %} selected_down{% endif %}" href="?order_by=created&sort_by=down">Sort</a>
+          </div>
+        </th>
+        <th>
+          <div>
+            Status
+          </div>
+        </th>
+        <th>Pointer File</th>
+        <th></th>
+      </thead>
+      <tbody>
+        {% for item in aips %}
+          <tr>
+            <td><a href="{% url 'components.archival_storage.views.aip_download' item.uuid %}">{{ item.name }}</a></td>
+            <td class="size">{{ item.size }}</td>
+            <td class="uuid">{{ item.uuid }}</td>
+            <td><span class='timestamp'>{{ item.date }}</a></td>
+            <td>{{ item.status }}</td>
+            <td><a href="{% url 'components.archival_storage.views.aip_pointer_file_download' item.uuid %}">Pointer File</a></td>
+            <td><a href="{% url 'components.archival_storage.views.aip_delete' item.uuid %}"><img src="{{ STATIC_URL }}images/delete.png"/></a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <script>
+    $(document).ready(function () {
+      $('#paging_jump_to').change(function() {
+        window.location = '/archival-storage/?{{ search_params }}&page=' + $(this).val();
+      });
+    });
+    </script>
+
+    {% include '_pager.html' %}
+
+  {% else %}
+
+    <div class="alert-message">
+      <p>Archival storage is empty.</p>
+    </div>
+
+  {% endif %}
+
+  <script>
+  $(document).ready(function() {
+    localizeTimestampElements();
+  });
+  </script>
+
+{% endblock %}

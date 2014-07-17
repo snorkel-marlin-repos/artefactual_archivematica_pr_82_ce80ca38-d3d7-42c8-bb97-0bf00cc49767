@@ -1,0 +1,47 @@
+{% extends "layout_fluid.html" %}
+{% load breadcrumb %}
+{% load url from future %}
+
+{% block content %}
+  <div class="row">
+    <div class="span12">
+
+      <ul class="breadcrumb">
+        {% breadcrumb_url 'Ingest' 'components.ingest.views.ingest_grid' %}
+        {% breadcrumb name %}
+      </ul>
+
+      <h1>Submission Information Package<br /><small>{{ name }}</small></h1>
+
+      <p><strong>UUID:</strong> {{ uuid }}</p>
+
+      {% if is_waiting %}
+        <div class="alert-message block-message">
+          <p>There are micro-services awaiting user decisions.</p>
+          <div class="alert-actions">
+            <a class="btn small" href="{% url 'components.ingest.views.ingest_microservices' uuid %}">View micro-services</a>
+          </div>
+        </div>
+      {% endif %}
+
+      <h5>Micro-Services</h5>
+      <ul>
+        <li><a href="{% url 'components.ingest.views.ingest_microservices' uuid %}">List</a></li>
+      </ul>
+
+      <h5>Rights</h5>
+      <ul>
+        <li><a href="{% url 'components.rights.views.ingest_rights_list' uuid %}">List</a></li>
+        <li><a href="{% url 'components.rights.views.ingest_rights_edit' uuid %}">Add</a></li>
+      </ul>
+
+      <h5>Metadata</h5>
+      <ul>
+        <li><a href="{% url 'components.ingest.views.ingest_metadata_list' uuid %}">List</a></li>
+        <li><a href="{% url 'components.ingest.views.ingest_metadata_edit' uuid %}">Add</a></li>
+        <li><a href="{% url 'components.ingest.views.ingest_metadata_event_detail' uuid %}">Manual Normalization Event Detail</a></li>
+      </ul>
+
+    </div>
+  </div>
+{% endblock %}
