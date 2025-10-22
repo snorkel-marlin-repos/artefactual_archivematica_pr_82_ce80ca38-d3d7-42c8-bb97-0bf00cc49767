@@ -476,7 +476,7 @@ SET @preTranscribeMSCL = '77a7fa46-92b9-418e-aa88-fbedd4114c9f' COLLATE utf8_uni
 SET @postTranscribeMSCL = 'f574b2a0-6e0b-4c74-ac5b-a73ddb9593a0' COLLATE utf8_unicode_ci;
 
 INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description) VALUES (@transcribeChoiceTC, '9c84b047-9a6d-463f-9836-eafa49743b84', NULL, 'Transcribe SIP contents');
-INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, defaultExitMessage, currentTask, defaultNextChainLink) VALUES (@transcribeChoiceMSCL, 'Normalize', 'Failed', @transcribeChoiceTC, @transcribeFileMSCL);
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, defaultExitMessage, currentTask, defaultNextChainLink) VALUES (@transcribeChoiceMSCL, 'Transcribe SIP contents', 'Failed', @transcribeChoiceTC, @transcribeFileMSCL);
 UPDATE MicroServiceChainLinks SET defaultNextChainLink=@transcribeChoiceMSCL WHERE pk=@preTranscribeMSCL;
 UPDATE MicroServiceChainLinksExitCodes SET nextMicroServiceChainLink=@transcribeChoiceMSCL WHERE microServiceChainLink=@preTranscribeMSCL;
 
@@ -488,7 +488,7 @@ INSERT INTO MicroServiceChoiceReplacementDic (pk, choiceAvailableAtLink, descrip
 SET @transcribeFileMSCL = '2900f6d8-b64c-4f2a-8f7f-bb60a57394f6' COLLATE utf8_unicode_ci;
 INSERT INTO StandardTasksConfigs (pk, requiresOutputLock, execute, arguments, filterSubDir) VALUES ('657bdd72-8f18-4477-8018-1f6c8df7ad85', 0, 'transcribeFile_v0.0', '"%taskUUID%" "%fileUUID%" "%transcribe%"', 'objects');
 INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description) VALUES ('297e7ebd-71bb-41e9-b1b7-945b6a9f00c5', 'a6b1c323-7d36-428e-846a-e7e819423577', '657bdd72-8f18-4477-8018-1f6c8df7ad85', 'Transcribe');
-INSERT INTO MicroServiceChainLinks(pk, microserviceGroup, defaultExitMessage, currentTask, defaultNextChainLink) values (@transcribeFileMSCL, 'Normalize', 'Failed', '297e7ebd-71bb-41e9-b1b7-945b6a9f00c5', @postTranscribeMSCL);
+INSERT INTO MicroServiceChainLinks(pk, microserviceGroup, defaultExitMessage, currentTask, defaultNextChainLink) values (@transcribeFileMSCL, 'Transcribe SIP contents', 'Failed', '297e7ebd-71bb-41e9-b1b7-945b6a9f00c5', @postTranscribeMSCL);
 
 INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink, exitMessage) VALUES ('22ebafb1-3ec3-406a-939d-4eb9f3b8bbd1', @transcribeChoiceMSCL, 0, @transcribeFileMSCL, 'Completed successfully');
 INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink, exitMessage) VALUES ('804d4d23-e81b-4d81-8e67-1a3b5470c841', @transcribeFileMSCL, 0, @postTranscribeMSCL, 'Completed successfully');
@@ -708,3 +708,53 @@ SET @manualSIPMSC = '9634868c-b183-4d65-8587-2f53f7ff5a0a' COLLATE utf8_unicode_
 DELETE FROM MicroServiceChainChoice WHERE chainAvailable=@manualSIPMSC;
 DELETE FROM MicroServiceChains WHERE pk=@manualSIPMSC;
 -- /Issue 6965 - remove 'create sip manually'
+
+-- Issue 6564 DIP storage
+SET @dip_storage_chain = '2748bedb-12aa-4b10-a556-66e7205580a4' COLLATE utf8_unicode_ci;
+
+-- Store DIP (uses the existing store AIP script)
+SET @dip_storage_mscl = 'e85a01f1-4061-4049-8922-5694b25c23a2' COLLATE utf8_unicode_ci;
+SET @dip_storage_stc = '1f6f0cd1-acaf-40fb-bb2a-047383b8c977' COLLATE utf8_unicode_ci;
+SET @dip_storage_tc = '85ce72dd-627a-4d0d-b118-fdaedf8ed8e6' COLLATE utf8_unicode_ci;
+
+-- Get DIP storage locations from the storage service
+SET @dip_storage_location_mscl = 'ed5d8475-3793-4fb0-a8df-94bd79b26a4c' COLLATE utf8_unicode_ci;
+SET @dip_storage_locations_stc = '5a6d1a88-1c2f-40b5-adec-ad7e533340ff' COLLATE utf8_unicode_ci;
+SET @dip_storage_locations_tc = '21292501-0c12-4376-8fb1-413286060dc2' COLLATE utf8_unicode_ci;
+
+-- Let user select DIP storage location
+SET @dip_storage_choose_location_mscl = 'b7a83da6-ed5a-47f7-a643-1e9f9f46e364' COLLATE utf8_unicode_ci;
+SET @dip_storage_choose_location_stc = '1fa7994d-9106-4d5a-892c-539af7e4ad8d' COLLATE utf8_unicode_ci;
+SET @dip_storage_choose_location_tc = '55123c46-78c9-4b5d-ad92-2b1f3eb658af' COLLATE utf8_unicode_ci;
+
+INSERT INTO StandardTasksConfigs (pk, requiresOutputLock, execute, arguments) VALUES (@dip_storage_locations_stc, 1, 'getAipStorageLocations_v0.0', 'DS');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description) VALUES (@dip_storage_locations_tc, 'a19bfd9f-9989-4648-9351-013a10b382ed', @dip_storage_locations_stc, 'Retrieve DIP Storage Locations');
+INSERT INTO MicroServiceChainLinks (pk, currentTask, defaultNextChainLink, defaultExitMessage, microserviceGroup) VALUES (@dip_storage_location_mscl, @dip_storage_locations_tc, @MoveSIPToFailedLink, 'Failed', 'Upload DIP');
+
+INSERT INTO StandardTasksConfigs (pk, requiresOutputLock, execute) VALUES (@dip_storage_choose_location_stc, 1, '%DIPsStore%');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description) VALUES (@dip_storage_choose_location_tc, '01b748fe-2e9d-44e4-ae5d-113f74c9a0ba', @dip_storage_choose_location_stc, 'Store DIP location');
+INSERT INTO MicroServiceChainLinks (pk, currentTask, defaultNextChainLink, defaultExitMessage, microserviceGroup) VALUES (@dip_storage_choose_location_mscl, @dip_storage_choose_location_tc, @MoveSIPToFailedLink, 'Failed', 'Upload DIP');
+
+INSERT INTO StandardTasksConfigs (pk, requiresOutputLock, execute, arguments) VALUES (@dip_storage_stc, 1, 'storeAIP_v0.0', '"%DIPsStore%" "%watchDirectoryPath%uploadDIP/%SIPName%-%SIPUUID%" "%SIPUUID%" "%SIPName%" "DIP"');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description) VALUES (@dip_storage_tc, '36b2e239-4a57-4aa5-8ebc-7a29139baca6', @dip_storage_stc, 'Store DIP');
+INSERT INTO MicroServiceChainLinks (pk, currentTask, defaultNextChainLink, defaultExitMessage, microserviceGroup) VALUES (@dip_storage_mscl, @dip_storage_tc, @MoveSIPToFailedLink, 'Failed', 'Upload DIP');
+
+
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink, exitMessage) VALUES ('68d19ada-9c7a-47b3-bedc-66788d5e9e3e', @dip_storage_location_mscl, 0, @dip_storage_choose_location_mscl, 'Completed successfully');
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink, exitMessage) VALUES ('637afa7b-d970-4076-aa4e-d62dfc6bb0b6', @dip_storage_choose_location_mscl, 0, @dip_storage_mscl, 'Completed successfully');
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink, exitMessage) VALUES ('9a028152-f3a2-4b98-82e1-8f77c594d1de', @dip_storage_mscl, 0, 'e3efab02-1860-42dd-a46c-25601251b930', 'Completed successfully');
+
+INSERT INTO MicroServiceChains (pk, startingLink, description) VALUES (@dip_storage_chain, @dip_storage_location_mscl, 'Store DIP');
+INSERT INTO MicroServiceChainChoice (pk, choiceAvailableAtLink, chainAvailable) VALUES ('cb15da43-5c1b-478a-b25c-2ef69eff1dbf', '92879a29-45bf-4f0b-ac43-e64474f0f2f9', @dip_storage_chain);
+-- /Issue 6564
+
+-- Issue 6788 - Add post store AIP hook
+SET @postStoreMSCL = 'b7cf0d9a-504f-4f4e-9930-befa817d67ff' COLLATE utf8_unicode_ci;
+SET @postStoreTC = 'f09c1aa1-8a5d-49d1-ba60-2866e026eed9' COLLATE utf8_unicode_ci;
+SET @postStoreSTC = 'ab404b46-9c54-4ca5-87f1-b69a8d2299a1' COLLATE utf8_unicode_ci;
+INSERT INTO StandardTasksConfigs (pk, requiresOutputLock, execute, arguments) VALUES (@postStoreSTC, 0, 'postStoreAIPHook_v1.0', '"%SIPUUID%"');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description) VALUES (@postStoreTC, '36b2e239-4a57-4aa5-8ebc-7a29139baca6', @postStoreSTC, 'Clean up after storing AIP');
+INSERT INTO MicroServiceChainLinks(pk, microserviceGroup, defaultExitMessage, currentTask, defaultNextChainLink) VALUES (@postStoreMSCL, 'Store AIP', 'Failed', @postStoreTC, 'd5a2ef60-a757-483c-a71a-ccbffe6b80da');
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink, exitMessage) VALUES ('c3c8e23c-1c8a-4c24-b8a1-3d6e8a8c3a7b', @postStoreMSCL, 0, 'd5a2ef60-a757-483c-a71a-ccbffe6b80da', 'Completed successfully');
+UPDATE MicroServiceChainLinksExitCodes SET nextMicroServiceChainLink=@postStoreMSCL WHERE microServiceChainLink='48703fad-dc44-4c8e-8f47-933df3ef6179';
+-- /Issue 6788 - Add post store AIP hook
