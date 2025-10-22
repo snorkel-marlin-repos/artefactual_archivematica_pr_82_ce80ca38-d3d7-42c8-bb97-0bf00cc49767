@@ -47,6 +47,9 @@ logging.basicConfig(filename="/tmp/archivematicaDashboard.log",
 pathToElasticSearchServerConfigFile='/etc/elasticsearch/elasticsearch.yml'
 MAX_QUERY_SIZE = 50000  # TODO Check that this is a reasonable number
 
+class ElasticsearchError(Exception):
+    pass
+
 def getDashboardUUID():
     sql = "SELECT value FROM DashboardSettings WHERE name='%s'"
     sql = sql % (MySQLdb.escape_string('dashboard_uuid'))
@@ -696,12 +699,29 @@ def get_transfer_file_info(field, value):
         pyes.FieldQuery(pyes.FieldParameter(field, searchvalue)),
         indicies=indicies,
     )
-    if len(documents['hits']['hits']) > 0:
+    result_count = len(documents['hits']['hits'])
+    if result_count == 1:
         results = documents['hits']['hits'][0]['_source']
+    elif result_count > 1:
+        # Elasticsearch was sometimes ranking results for a different filename above
+        # the actual file being queried for; in that case only consider results
+        # where the value is an actual precise match.
+        filtered_results = [results for results in documents['hits']['hits']
+                            if results['_source'][field] == value]
+
+        result_count = len(filtered_results)
+        if result_count == 1:
+            results = filtered_results[0]['_source']
+        if result_count > 1:
+            results = filtered_results[0]['_source']
+            logging.warning('get_transfer_file_info returned %s results for query %s: %s (using first result)',
+                            result_count, field, value)
+        elif result_count < 1:
+            logging.error('get_transfer_file_info returned no exact results for query %s: %s',
+                          field, value)
+            raise ElasticsearchError("get_transfer_file_info returned no exact results")
 
     logging.debug('get_transfer_file_info: results: %s', results)
-    if results.get(field) != value:
-        logging.warning('May not be correct transfer info: %s is %s instead of %s', field, results.get(field), value)
     return results
 
 
